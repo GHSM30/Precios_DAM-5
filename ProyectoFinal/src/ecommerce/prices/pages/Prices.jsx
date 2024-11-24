@@ -30,10 +30,20 @@ const Prices = () => {
     fetchPrices();
   }, []);
 
-  const handlePriceAdded = () => {
-    fetchPrices();
+  
+
+  const handlePriceAdded = (newPrice) => {
+    setPrices((prevPrices) => {
+      const updatedPrices = [...prevPrices, newPrice];
+      console.log("Precios actualizados:", updatedPrices);
+      return updatedPrices;
+    });
     setAddPriceShowModal(false);
+    
+    // Llamar a fetchPrices para recargar los datos (de la API o el estado)
+    fetchPrices();
   };
+  
 
   return (
     <Box
@@ -50,7 +60,8 @@ const Prices = () => {
       {/* Contenido principal */}
       <Box sx={{ flex: 1, overflowY: 'auto', padding: 2 }}>
         {currentTabInPrices === "WHOLESALE" && (
-          <WholesaleTab prices={prices} />
+          <WholesaleTab prices={prices}  />
+          
         )}
         {currentTabInPrices === "RETAIL" && (
           <RetailTab prices={prices} />

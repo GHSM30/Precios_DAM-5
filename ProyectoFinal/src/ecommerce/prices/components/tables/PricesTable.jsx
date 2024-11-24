@@ -19,6 +19,19 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import { getAllPrices } from "../services/remote/get/GetAllPrices";
 import { UpdateOnePrice } from "../services/remote/put/UpdateOnePrice";
 import { DeleteOnePrice } from "../services/remote/delete/DeleteOnePrice";
+import { AddOnePrice } from "../services/remote/post/AddOnePrice";
+import EditPriceModal from "../modals/EditPriceModal";
+
+const handleEdit = (row) => {
+  console.log("Editando fila", row);
+  setEditedPrice(row.original);  // Esto debería funcionar si `setEditedPrice` está definido
+  setEditModalOpen(true);        // Abre el modal de edición
+};
+
+const handleDelete = (row) => {
+  setSelectedRow(row.original);
+  setDeleteModalOpen(true);
+};
 
 const PricesColumns = [
   { accessorKey: "IdProdServOK", header: "ID Producto", size: 150 },
@@ -38,7 +51,7 @@ const PricesColumns = [
         <Tooltip title="Editar Precio">
           <IconButton
             color="primary"
-            onClick={() => handleEdit(row)}
+            onClick={() => handleEdit(row)}  // Aquí usamos handleEdit directamente
           >
             <EditIcon />
           </IconButton>
@@ -46,7 +59,7 @@ const PricesColumns = [
         <Tooltip title="Eliminar Precio">
           <IconButton
             color="error"
-            onClick={() => handleDelete(row)}
+            onClick={() => handleDelete(row)} // Asegúrate de que handleDelete también esté correctamente definido
           >
             <DeleteIcon />
           </IconButton>
@@ -55,6 +68,7 @@ const PricesColumns = [
     ),
   },
 ];
+
 
 const PricesTable = ({ jsonData }) => {
   const [loadingTable, setLoadingTable] = useState(true);
@@ -67,12 +81,11 @@ const PricesTable = ({ jsonData }) => {
   const [newPrice, setNewPrice] = useState({
     IdProdServOK: "",
     IdPresentaOK: "",
-    CostoIni: "",
-    CostoFin: "",
-    Precio: "",
-    Activo: "Sí",
-    UsuarioReg: "",
-    FechaReg: new Date().toLocaleDateString(),
+    CostoIni: 0,
+    CostoFin: 0,
+    Precio: 0,
+    UsuarioReg: "TEST_USER",
+    FechaReg: new Date().toISOString(),
   });
 
   const [notification, setNotification] = useState({
@@ -85,7 +98,7 @@ const PricesTable = ({ jsonData }) => {
     const fetchPrices = async () => {
       try {
         const pricesResponse = await getAllPrices(jsonData);
-
+  
         if (Array.isArray(pricesResponse) && pricesResponse.length > 0) {
           const allPrices = pricesResponse.reduce((acc, current) => {
             if (current.precios && Array.isArray(current.precios)) {
@@ -96,85 +109,86 @@ const PricesTable = ({ jsonData }) => {
                 CostoFin: price.CostoFin || 0,
                 Precio: price.Precio || 0,
                 Activo: price.detail_row?.Activo === "S" ? "Sí" : "No",
-                UsuarioReg:
-                  price.detail_row?.detail_row_reg[0]?.UsuarioReg || "Desconocido",
+                UsuarioReg: price.detail_row?.detail_row_reg[0]?.UsuarioReg || "Desconocido",
                 FechaReg: price.detail_row?.detail_row_reg[0]?.FechaReg
                   ? new Date(price.detail_row.detail_row_reg[0]?.FechaReg).toLocaleDateString()
                   : "No disponible",
               }));
-
+  
               acc.push(...formattedPrices);
             }
             return acc;
           }, []);
-
+  
           setPricesData(allPrices);
         }
-        setLoadingTable(false);
       } catch (error) {
         console.error("Error al cargar los precios:", error);
+        setNotification({
+          open: true,
+          message: "Error al cargar los datos. Por favor, intente nuevamente.",
+          type: "error",
+        });
+      } finally {
         setLoadingTable(false);
       }
     };
-
+  
     fetchPrices();
   }, [jsonData]);
-
-  const handleEdit = (row) => {
-    setSelectedRow(row.original);
-    setEditedPrice({ ...row.original });
-    setEditModalOpen(true);
-  };
-
-  const handleDelete = (row) => {
-    setSelectedRow(row.original);
-    setDeleteModalOpen(true);
-  };
+  
+  
 
   const validateNewPrice = () => {
-    return Object.values(newPrice).every(value => value.trim() !== "");
+    return Object.entries(newPrice).every(([key, value]) =>
+      typeof value === "string" ? value.trim() !== "" : value !== null && value !== undefined
+    );
   };
 
   const handleSaveEdit = async () => {
     try {
       const priceId = editedPrice?.IdProdServOK;
-
+  
       if (!priceId) {
         console.error("El ID del precio es inválido");
         return;
       }
-
+  
       const updatedPriceData = {
-        ...editedPrice,
-        IdInstitutoOK: '9001',
-        IdListaOK: '9001-000000000001',
-        IdListaBK: 'PUBLICO-GENERAL',
-        DesLista: 'Publico en General',
-        FechaExpiraFin: '2024-12-31T07:00:00.000Z',
-        FechaExpiraIni: '2023-01-01T07:00:00.000Z',
-        IdTipoFormulaOK: '',
-        IdTipoGeneraListaOK: 'IdTipoGeneraLista-IdManual',
-        IdTipoListaOK: 'IdTipoListaPrecios-IdGeneral',
+        ...editedPrice,  // Datos actualizados
       };
-
+  
       const updatedPrice = await UpdateOnePrice(priceId, updatedPriceData);
-
+  
       if (updatedPrice && updatedPrice._id) {
         const updatedData = PricesData.map((price) =>
           price.IdProdServOK === priceId ? { ...price, ...updatedPrice } : price
         );
         setPricesData(updatedData);
-        setEditModalOpen(false);
-        setNotification({ open: true, message: "Precio actualizado con éxito", type: "success" });
+        setEditModalOpen(false);  // Cerrar el modal
+        setNotification({
+          open: true,
+          message: "Precio actualizado con éxito",
+          type: "success",
+        });
       } else {
         console.error("La actualización del precio no fue exitosa.");
-        setNotification({ open: true, message: "Error al actualizar el precio", type: "error" });
+        setNotification({
+          open: true,
+          message: "Error al actualizar el precio",
+          type: "error",
+        });
       }
     } catch (error) {
       console.error("Error al actualizar el precio:", error);
-      setNotification({ open: true, message: "Error al actualizar el precio", type: "error" });
+      setNotification({
+        open: true,
+        message: "Error al actualizar el precio",
+        type: "error",
+      });
     }
   };
+  
 
   const handleConfirmDelete = async () => {
     try {
@@ -210,7 +224,7 @@ const PricesTable = ({ jsonData }) => {
       setNotification({ open: true, message: "Por favor, completa todos los campos", type: "error" });
       return;
     }
-
+  
     try {
       const priceToAdd = {
         ...newPrice,
@@ -221,13 +235,33 @@ const PricesTable = ({ jsonData }) => {
         FechaExpiraFin: "2024-12-31T07:00:00.000Z",
         FechaExpiraIni: "2023-01-01T07:00:00.000Z",
         IdTipoFormulaOK: "",
-        IdTipoGeneraListaOK: "IdTipoGeneraLista-IdManual",
+        IdTipoGeneraListaOK: "IdTipoGeneraLista-IdManual", // Este campo es obligatorio
         IdTipoListaOK: "IdTipoListaPrecios-IdGeneral",
+        precios: [
+          {
+            IdProdServOK: newPrice.IdProdServOK,
+            IdPresentaOK: newPrice.IdPresentaOK,
+            CostoIni: newPrice.CostoIni || 0, // Asegurarse de que `CostoIni` tenga un valor
+            CostoFin: newPrice.CostoFin || 0,
+            Precio: newPrice.Precio || 0,
+            detail_row: {
+              Activo: "S",
+              Borrado: "N",
+              detail_row_reg: [
+                {
+                  FechaReg: new Date().toISOString(),
+                  UsuarioReg: newPrice.UsuarioReg || "Desconocido",
+                },
+              ],
+            },
+          },
+        ],
       };
-
-      const addedPrice = await UpdateOnePrice(null, priceToAdd);
-
-      if (addedPrice && addedPrice._id) {
+      
+  
+      const addedPrice = await AddOnePrice(priceToAdd); // Cambiado a AddOnePrice
+  
+      if (addedPrice) {
         setPricesData([...PricesData, addedPrice]);
         setAddModalOpen(false);
         setNotification({ open: true, message: "Precio agregado con éxito", type: "success" });
@@ -320,49 +354,50 @@ const PricesTable = ({ jsonData }) => {
       </Dialog>
 
       <Dialog open={editModalOpen} onClose={() => setEditModalOpen(false)}>
-        <DialogTitle>Editar Precio</DialogTitle>
-        <DialogContent>
-          <TextField
-            fullWidth
-            label="ID Producto"
-            value={editedPrice?.IdProdServOK || ""}
-            onChange={(e) => setEditedPrice({ ...editedPrice, IdProdServOK: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="ID Presentación"
-            value={editedPrice?.IdPresentaOK || ""}
-            onChange={(e) => setEditedPrice({ ...editedPrice, IdPresentaOK: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Costo Inicial"
-            value={editedPrice?.CostoIni || ""}
-            onChange={(e) => setEditedPrice({ ...editedPrice, CostoIni: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Costo Final"
-            value={editedPrice?.CostoFin || ""}
-            onChange={(e) => setEditedPrice({ ...editedPrice, CostoFin: e.target.value })}
-            margin="normal"
-          />
-          <TextField
-            fullWidth
-            label="Precio"
-            value={editedPrice?.Precio || ""}
-            onChange={(e) => setEditedPrice({ ...editedPrice, Precio: e.target.value })}
-            margin="normal"
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setEditModalOpen(false)}>Cancelar</Button>
-          <Button onClick={handleSaveEdit} color="primary">Guardar</Button>
-        </DialogActions>
-      </Dialog>
+  <DialogTitle>Editar Precio</DialogTitle>
+  <DialogContent>
+    <TextField
+      fullWidth
+      label="ID Producto"
+      value={editedPrice?.IdProdServOK || ""}
+      onChange={(e) => setEditedPrice({ ...editedPrice, IdProdServOK: e.target.value })}
+      margin="normal"
+    />
+    <TextField
+      fullWidth
+      label="ID Presentación"
+      value={editedPrice?.IdPresentaOK || ""}
+      onChange={(e) => setEditedPrice({ ...editedPrice, IdPresentaOK: e.target.value })}
+      margin="normal"
+    />
+    <TextField
+      fullWidth
+      label="Costo Inicial"
+      value={editedPrice?.CostoIni || ""}
+      onChange={(e) => setEditedPrice({ ...editedPrice, CostoIni: e.target.value })}
+      margin="normal"
+    />
+    <TextField
+      fullWidth
+      label="Costo Final"
+      value={editedPrice?.CostoFin || ""}
+      onChange={(e) => setEditedPrice({ ...editedPrice, CostoFin: e.target.value })}
+      margin="normal"
+    />
+    <TextField
+      fullWidth
+      label="Precio"
+      value={editedPrice?.Precio || ""}
+      onChange={(e) => setEditedPrice({ ...editedPrice, Precio: e.target.value })}
+      margin="normal"
+    />
+  </DialogContent>
+  <DialogActions>
+    <Button onClick={() => setEditModalOpen(false)}>Cancelar</Button>
+    <Button onClick={handleSaveEdit} color="primary">Guardar</Button>
+  </DialogActions>
+</Dialog>
+
 
       <Dialog open={deleteModalOpen} onClose={() => setDeleteModalOpen(false)}>
         <DialogTitle>Confirmar eliminación</DialogTitle>

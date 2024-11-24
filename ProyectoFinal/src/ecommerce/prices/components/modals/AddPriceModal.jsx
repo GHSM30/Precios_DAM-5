@@ -51,16 +51,15 @@ const AddPriceModal = ({ open, onClose, onPriceAdded, fetchData }) => {
       setMensajeErrorAlert("");
       setMensajeExitoAlert("");
       setLoading(true);
-
       try {
         const price = {
           IdProdServOK: values.IdProdServOK,
           IdPresentaOK: values.IdPresentaOK,
-          CostoIni: parseFloat(values.CostoIni),
-          CostoFin: parseFloat(values.CostoFin),
-          Precio: parseFloat(values.Precio),
+          CostoIni: parseFloat(values.CostoIni),  // Aseguramos que sea un número
+          CostoFin: parseFloat(values.CostoFin),  // Aseguramos que sea un número
+          Precio: parseFloat(values.Precio),      // Aseguramos que sea un número
           detail_row: {
-            Activo: values.Activo ? "S" : "N",
+            Activo: values.Activo ? "S" : "N",  // Convertimos a "S" o "N"
             Borrado: "N",
             detail_row_reg: [
               {
@@ -70,8 +69,11 @@ const AddPriceModal = ({ open, onClose, onPriceAdded, fetchData }) => {
             ],
           },
         };
-
+        
         await AddOnePrice(price); // Llamar al servicio para agregar el precio
+        // Restablecer los campos del formulario
+        formik.resetForm();  // Esto vacía los campos
+        console.log("Formulario reseteado:", formik.values);  // Esto debería estar vacío después de un submit exitoso
         setMensajeExitoAlert("Precio fue creado y guardado correctamente");
 
         if (onPriceAdded) {
@@ -85,16 +87,67 @@ const AddPriceModal = ({ open, onClose, onPriceAdded, fetchData }) => {
     },
   });
 
+  const handleClose = () => {
+    setMensajeErrorAlert("");  // Limpiar mensaje de error
+    setMensajeExitoAlert("");  // Limpiar mensaje de éxito
+    onClose();  // Llamar al callback del componente padre
+  };
+
+  const handleSubmit = async (values) => {
+    setMensajeErrorAlert("");
+    setMensajeExitoAlert("");
+    setLoading(true);
+  
+    try {
+      // Construcción del objeto del nuevo precio
+      const price = {
+        IdProdServOK: values.IdProdServOK,
+        IdPresentaOK: values.IdPresentaOK,
+        CostoIni: parseFloat(values.CostoIni),
+        CostoFin: parseFloat(values.CostoFin),
+        Precio: parseFloat(values.Precio),
+        detail_row: {
+          Activo: values.Activo ? "S" : "N",
+          Borrado: "N",
+          detail_row_reg: [
+            {
+              FechaReg: new Date().toISOString(),
+              UsuarioReg: "Admin", // Cambiar por el usuario actual
+            },
+          ],
+        },
+      };
+  
+      const newPrice = await AddOnePrice(price);
+  
+      // Restablecer los campos del formulario
+      formik.resetForm();
+  
+      setMensajeExitoAlert("Precio fue creado y guardado correctamente");
+  
+      // Actualizar la tabla con el nuevo precio
+      if (onPriceAdded) {
+        onPriceAdded(newPrice);
+      }
+  
+    } catch (e) {
+      setMensajeErrorAlert("No se pudo crear el precio");
+    }
+    setLoading(false);
+  };
+  
+  
+
   const commonTextFieldProps = {
     onChange: formik.handleChange,
     onBlur: formik.handleBlur,
     fullWidth: true,
     margin: "dense",
-    disabled: !!mensajeExitoAlert,
+    disabled: !!mensajeExitoAlert,  // Deshabilitar cuando haya un mensaje de éxito
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth>
+    <Dialog open={open} onClose={handleClose} fullWidth>
       <form onSubmit={formik.handleSubmit}>
         <DialogTitle>
           <Typography component="h6">
@@ -185,7 +238,7 @@ const AddPriceModal = ({ open, onClose, onPriceAdded, fetchData }) => {
             Guardar
           </LoadingButton>
           <LoadingButton
-            onClick={onClose}
+            onClick={handleClose}  // Limpiar los mensajes y cerrar el modal
             startIcon={<CloseIcon />}
             variant="contained"
             disabled={loading}

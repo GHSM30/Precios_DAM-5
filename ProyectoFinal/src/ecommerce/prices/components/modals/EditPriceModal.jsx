@@ -2,8 +2,21 @@ import React from "react";
 import { Dialog, DialogTitle, DialogContent, DialogActions, TextField, Button, Stack } from "@mui/material";
 
 const EditPriceModal = ({ open, editedPrice, setEditedPrice, handleSave, handleClose }) => {
-  // Este componente de modal recibirá el estado de apertura del modal (open), el precio editado (editedPrice),
-  // la función para cambiar el precio (setEditedPrice), y las funciones para guardar o cerrar el modal.
+  // Mapeo de etiquetas amigables para cada campo
+  const fieldLabels = {
+    IdProdServOK: "ID Producto/Servicio",
+    IdPresentaOK: "ID Presentación",
+    CostoIni: "Costo Inicial",
+    CostoFin: "Costo Final",
+    Precio: "Precio",
+    Activo: "Activo"
+  };
+
+  // Función para manejar la actualización del campo en el modal
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setEditedPrice({ ...editedPrice, [name]: value });
+  };
 
   return (
     <Dialog open={open} onClose={handleClose}>
@@ -13,12 +26,10 @@ const EditPriceModal = ({ open, editedPrice, setEditedPrice, handleSave, handleC
           {Object.keys(editedPrice || {}).map((key) => (
             <TextField
               key={key}
-              label={key}
+              label={fieldLabels[key] || key} // Usar etiquetas amigables o la clave si no existe
               name={key}
-              value={editedPrice?.[key] || ""}
-              onChange={(e) =>
-                setEditedPrice({ ...editedPrice, [e.target.name]: e.target.value })
-              }
+              value={editedPrice[key] || ""}
+              onChange={handleChange}
               fullWidth
             />
           ))}
@@ -28,7 +39,14 @@ const EditPriceModal = ({ open, editedPrice, setEditedPrice, handleSave, handleC
         <Button onClick={handleClose} color="error">
           Cancelar
         </Button>
-        <Button onClick={handleSave} color="primary" variant="contained">
+        <Button
+          onClick={() => {
+            handleSave(editedPrice);  // Pasar editedPrice a handleSave
+            handleClose();  // Cerrar modal después de guardar
+          }}
+          color="primary"
+          variant="contained"
+        >
           Guardar
         </Button>
       </DialogActions>
