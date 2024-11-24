@@ -1,62 +1,76 @@
 import React, { useState, useEffect } from "react";
-// Importar componentes (asegúrate de que estos existen o crear versiones correspondientes)
 import PricesNavTab from "../components/tabs/PricesNavTab.jsx";
 import WholesaleTab from "../components/tabs/WholesaleTab.jsx";
 import RetailTab from "../components/tabs/RetailTab.jsx";
-import { getAllPrices } from "../components/services/remote/get/GetAllPrices.jsx"; // Asegúrate de tener esta función creada
+import { getAllPrices } from "../components/services/remote/get/GetAllPrices.jsx";
 import AddPriceModal from "../components/modals/AddPriceModal";
+import { Box } from "@mui/material"; // Importar Box para el layout
 
 const Prices = () => {
-    // Estado para controlar la pestaña seleccionada (mayoreo o menudeo)
-    const [currentTabInPrices, setCurrentTabInPrices] = useState("WHOLESALE");
+  const [currentTabInPrices, setCurrentTabInPrices] = useState("WHOLESALE");
+  const [prices, setPrices] = useState([]);
+  const [addPriceShowModal, setAddPriceShowModal] = useState(false);
 
-    // Estado para almacenar los precios
-    const [prices, setPrices] = useState([]);
+  const fetchPrices = async () => {
+    try {
+      const data = await getAllPrices();
+      console.log("Precios obtenidos en Prices.jsx:", data);
+      if (data && data.length > 0) {
+        setPrices(data);
+        console.log("Precios actualizados:", data);
+      } else {
+        console.error("No se encontraron precios en la respuesta");
+      }
+    } catch (error) {
+      console.error("Error al obtener los precios:", error);
+    }
+  };
 
-    // Estado para controlar la visibilidad del modal de agregar precios
-    const [addPriceShowModal, setAddPriceShowModal] = useState(false);
+  useEffect(() => {
+    fetchPrices();
+  }, []);
 
-    // Función para obtener los precios
-    const fetchPrices = async () => {
-        try {
-            const data = await getAllPrices(); // Llamada a la función de servicio
-            setPrices(data);
-        } catch (error) {
-            console.error("Error al obtener los precios:", error);
-        }
-    };
+  const handlePriceAdded = () => {
+    fetchPrices();
+    setAddPriceShowModal(false);
+  };
 
-    // Efecto que se ejecuta al cargar el componente para obtener los precios
-    useEffect(() => {
-        fetchPrices();
-    }, []);
+  return (
+    <Box
+      sx={{
+        display: 'flex',
+        flexDirection: 'column',
+        minHeight: '100vh', // Aseguramos que ocupe toda la altura de la pantalla
+        paddingBottom: '50px', // Agregar espacio para que el pie de página no quede pegado
+      }}
+    >
+      {/* Barra de navegación */}
+      <PricesNavTab setCurrentTabInPrices={setCurrentTabInPrices} />
 
-    // Función para manejar el evento después de agregar un precio
-    const handlePriceAdded = () => {
-        fetchPrices(); // Actualizar la lista de precios
-        setAddPriceShowModal(false); // Cerrar el modal
-    };
+      {/* Contenido principal */}
+      <Box sx={{ flex: 1, overflowY: 'auto', padding: 2 }}>
+        {currentTabInPrices === "WHOLESALE" && (
+          <WholesaleTab prices={prices} />
+        )}
+        {currentTabInPrices === "RETAIL" && (
+          <RetailTab prices={prices} />
+        )}
+      </Box>
 
-    return (
-        <div>
-            <PricesNavTab setCurrentTabInPrices={setCurrentTabInPrices} />
+      {/* Modal para agregar un nuevo precio */}
+      <AddPriceModal
+        open={addPriceShowModal}
+        onClose={() => setAddPriceShowModal(false)}
+        onPriceAdded={handlePriceAdded}
+        fetchData={fetchPrices}
+      />
 
-            {currentTabInPrices === "WHOLESALE" && (
-                <WholesaleTab prices={prices} /> // Pasar los precios al componente de mayoreo
-            )}
-
-            {currentTabInPrices === "RETAIL" && (
-                <RetailTab prices={prices} /> // Pasar los precios al componente de menudeo
-            )}
-
-            {/* Modal para agregar un nuevo precio */}
-            <AddPriceModal
-                addPriceShowModal={addPriceShowModal}
-                setAddPriceShowModal={setAddPriceShowModal}
-                onPriceAdded={handlePriceAdded} // Pasamos la función para actualizar la lista
-            />
-        </div>
-    );
+      {/* Pie de página */}
+      <Box sx={{ height: '50px', backgroundColor: '#f5f5f5', textAlign: 'center', padding: 1 }}>
+        <p>Footer contenido aquí</p>
+      </Box>
+    </Box>
+  );
 };
 
 export default Prices;

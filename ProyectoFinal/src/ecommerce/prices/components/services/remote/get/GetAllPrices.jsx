@@ -20,6 +20,7 @@ export function getAllPrices() {
         }
       })
       .catch((error) => {
+        // Manejo de diferentes tipos de error
         if (error.response) {
           // Error en la respuesta del servidor (código de estado diferente de 2xx)
           console.error("Error de respuesta:", error.response.data);

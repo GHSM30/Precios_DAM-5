@@ -11,7 +11,7 @@ export default function Footer() {
         color: "#FFFFFF",
         padding: "16px",
         textAlign: "center",
-        marginTop: "auto",
+        marginTop: "auto", // Esto hace que el footer se quede al fondo
       }}
     >
       <Typography variant="body2" sx={{ fontWeight: "bold" }}>

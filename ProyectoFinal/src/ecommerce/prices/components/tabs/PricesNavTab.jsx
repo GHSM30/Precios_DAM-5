@@ -5,43 +5,44 @@ import React, { useState } from "react";
 const PricesTabs = ["Mayoreo", "Menudeo"];
 
 const PricesNavTab = ({ setCurrentTabInPrices }) => {
-    const [currentTabIndex, setCurrentTabIndex] = useState(0);
+  const [currentTabIndex, setCurrentTabIndex] = useState(0);
 
-    const handleChange = (e) => {
-        const selectedTab = e.target.innerText.toUpperCase();
-        console.log("Pestaña seleccionada:", selectedTab);
+  // Manejar el cambio de pestaña
+  const handleChange = (event, newValue) => {
+    const selectedTab = PricesTabs[newValue].toUpperCase();
+    console.log("Pestaña seleccionada:", selectedTab);
 
-        // Actualizar la pestaña seleccionada en el estado principal
-        setCurrentTabInPrices(selectedTab);
+    // Actualizar la pestaña seleccionada en el estado principal
+    setCurrentTabInPrices(selectedTab);
 
-        // Cambiar el índice de la pestaña actual según la selección
-        switch (selectedTab) {
-            case "MAYOREO":
-                setCurrentTabIndex(0);
-                break;
-            case "MENUDEO":
-                setCurrentTabIndex(1);
-                break;
-            default:
-                break;
-        }
-    };
+    // Cambiar el índice de la pestaña actual según la selección
+    setCurrentTabIndex(newValue);
+  };
 
-    return (
-        <Box sx={{ border: (theme) => `2px solid ${theme.palette.divider}`, mx: 1, padding: 0.5 }}>
-            <Tabs
-                value={currentTabIndex}
-                variant="fullWidth"
-                onChange={handleChange}
-                aria-label="Tabs de precios"
-                textColor="primary"
-            >
-                {PricesTabs.map((tab) => (
-                    <Tab key={tab} label={tab} />
-                ))}
-            </Tabs>
-        </Box>
-    );
+  return (
+    <Box
+      sx={{
+        borderBottom: (theme) => `2px solid ${theme.palette.divider}`,
+        mx: 1, 
+        padding: 0.5,
+        backgroundColor: "#fff",  // Fondo blanco para que resalte la barra de pestañas
+        boxShadow: 1,             // Agregar sombra para dar un efecto visual de separación
+      }}
+    >
+      <Tabs
+        value={currentTabIndex}
+        onChange={handleChange}
+        aria-label="Tabs de precios"
+        textColor="primary"
+        variant="fullWidth"
+        indicatorColor="primary"
+      >
+        {PricesTabs.map((tab, index) => (
+          <Tab key={index} label={tab} />
+        ))}
+      </Tabs>
+    </Box>
+  );
 };
 
 export default PricesNavTab;
