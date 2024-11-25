@@ -22,53 +22,6 @@ import { DeleteOnePrice } from "../services/remote/delete/DeleteOnePrice";
 import { AddOnePrice } from "../services/remote/post/AddOnePrice";
 import EditPriceModal from "../modals/EditPriceModal";
 
-const handleEdit = (row) => {
-  console.log("Editando fila", row);
-  setEditedPrice(row.original);  // Esto debería funcionar si `setEditedPrice` está definido
-  setEditModalOpen(true);        // Abre el modal de edición
-};
-
-const handleDelete = (row) => {
-  setSelectedRow(row.original);
-  setDeleteModalOpen(true);
-};
-
-const PricesColumns = [
-  { accessorKey: "IdProdServOK", header: "ID Producto", size: 150 },
-  { accessorKey: "IdPresentaOK", header: "ID Presentación", size: 150 },
-  { accessorKey: "CostoIni", header: "Costo Inicial", size: 100 },
-  { accessorKey: "CostoFin", header: "Costo Final", size: 100 },
-  { accessorKey: "Precio", header: "Precio", size: 100 },
-  { accessorKey: "Activo", header: "Activo", size: 50 },
-  { accessorKey: "UsuarioReg", header: "Registrado Por", size: 100 },
-  { accessorKey: "FechaReg", header: "Fecha de Registro", size: 150 },
-  {
-    id: "actions",
-    header: "Acciones",
-    size: 150,
-    Cell: ({ row }) => (
-      <Stack direction="row" spacing={1}>
-        <Tooltip title="Editar Precio">
-          <IconButton
-            color="primary"
-            onClick={() => handleEdit(row)}  // Aquí usamos handleEdit directamente
-          >
-            <EditIcon />
-          </IconButton>
-        </Tooltip>
-        <Tooltip title="Eliminar Precio">
-          <IconButton
-            color="error"
-            onClick={() => handleDelete(row)} // Asegúrate de que handleDelete también esté correctamente definido
-          >
-            <DeleteIcon />
-          </IconButton>
-        </Tooltip>
-      </Stack>
-    ),
-  },
-];
-
 
 const PricesTable = ({ jsonData }) => {
   const [loadingTable, setLoadingTable] = useState(true);
@@ -93,6 +46,54 @@ const PricesTable = ({ jsonData }) => {
     message: "",
     type: "success",
   });
+
+  // Mover handleEdit y handleDelete aquí dentro
+  const handleEdit = (row) => {
+    console.log("Editando fila", row);
+    setEditedPrice(row.original); // Esto ahora funcionará
+    setEditModalOpen(true); // Abre el modal de edición
+  };
+
+  const handleDelete = (row) => {
+    setSelectedRow(row.original); // Esto ahora funcionará
+    setDeleteModalOpen(true); // Abre el modal de eliminación
+  };
+
+  const PricesColumns = [
+    { accessorKey: "IdProdServOK", header: "ID Producto", size: 150 },
+    { accessorKey: "IdPresentaOK", header: "ID Presentación", size: 150 },
+    { accessorKey: "CostoIni", header: "Costo Inicial", size: 100 },
+    { accessorKey: "CostoFin", header: "Costo Final", size: 100 },
+    { accessorKey: "Precio", header: "Precio", size: 100 },
+    { accessorKey: "Activo", header: "Activo", size: 50 },
+    { accessorKey: "UsuarioReg", header: "Registrado Por", size: 100 },
+    { accessorKey: "FechaReg", header: "Fecha de Registro", size: 150 },
+    {
+      id: "actions",
+      header: "Acciones",
+      size: 150,
+      Cell: ({ row }) => (
+        <Stack direction="row" spacing={1}>
+          <Tooltip title="Editar Precio">
+            <IconButton
+              color="primary"
+              onClick={() => handleEdit(row)} // Usa handleEdit definido dentro del componente
+            >
+              <EditIcon />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Eliminar Precio">
+            <IconButton
+              color="error"
+              onClick={() => handleDelete(row)} // Usa handleDelete definido dentro del componente
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Tooltip>
+        </Stack>
+      ),
+    },
+  ];
 
   useEffect(() => {
     const fetchPrices = async () => {
@@ -145,49 +146,37 @@ const PricesTable = ({ jsonData }) => {
     );
   };
 
-  const handleSaveEdit = async () => {
-    try {
-      const priceId = editedPrice?.IdProdServOK;
-  
-      if (!priceId) {
-        console.error("El ID del precio es inválido");
-        return;
-      }
-  
-      const updatedPriceData = {
-        ...editedPrice,  // Datos actualizados
-      };
-  
-      const updatedPrice = await UpdateOnePrice(priceId, updatedPriceData);
-  
-      if (updatedPrice && updatedPrice._id) {
-        const updatedData = PricesData.map((price) =>
-          price.IdProdServOK === priceId ? { ...price, ...updatedPrice } : price
-        );
-        setPricesData(updatedData);
-        setEditModalOpen(false);  // Cerrar el modal
-        setNotification({
-          open: true,
-          message: "Precio actualizado con éxito",
-          type: "success",
-        });
-      } else {
-        console.error("La actualización del precio no fue exitosa.");
-        setNotification({
-          open: true,
-          message: "Error al actualizar el precio",
-          type: "error",
-        });
-      }
-    } catch (error) {
-      console.error("Error al actualizar el precio:", error);
-      setNotification({
-        open: true,
-        message: "Error al actualizar el precio",
-        type: "error",
-      });
+  function handleSaveEdit(row) {
+    if (!row || !row.original) {
+      console.error("Error: Datos de la fila no están definidos o son inválidos.", row);
+      return;
     }
-  };
+  
+    console.log("Datos de la fila recibidos:", row.original);
+  
+    const priceId = row.original.IdProdServOK;
+    if (!priceId) {
+      console.error("Error: El ID del producto (IdProdServOK) no está definido.");
+      return;
+    }
+  
+    const updatedPrice = {
+      Precio: row.values.Precio,
+      CostoIni: row.values.CostoIni,
+      CostoFin: row.values.CostoFin,
+    };
+  
+    // Llamar a la API
+    UpdateOnePrice(priceId, updatedPrice)
+      .then((response) => {
+        console.log("Precio actualizado con éxito:", response);
+      })
+      .catch((error) => {
+        console.error("Error al actualizar el precio:", error);
+      });
+  }
+  
+  
   
 
   const handleConfirmDelete = async () => {
@@ -394,7 +383,7 @@ const PricesTable = ({ jsonData }) => {
   </DialogContent>
   <DialogActions>
     <Button onClick={() => setEditModalOpen(false)}>Cancelar</Button>
-    <Button onClick={handleSaveEdit} color="primary">Guardar</Button>
+    <Button onClick={() => handleSaveEdit(row)}>Guardar</Button>
   </DialogActions>
 </Dialog>
 

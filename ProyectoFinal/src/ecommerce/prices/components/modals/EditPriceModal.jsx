@@ -15,7 +15,28 @@ const EditPriceModal = ({ open, editedPrice, setEditedPrice, handleSave, handleC
   // Función para manejar la actualización del campo en el modal
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEditedPrice({ ...editedPrice, [name]: value });
+
+    // Convertir valores a los tipos apropiados (números para ciertos campos)
+    const parsedValue =
+      ["CostoIni", "CostoFin", "Precio"].includes(name) ? parseFloat(value) : value;
+
+    setEditedPrice({ ...editedPrice, [name]: parsedValue });
+  };
+
+  // Guardar los cambios y cerrar el modal solo si fue exitoso
+  const handleSaveClick = async () => {
+    console.log("Datos enviados para guardar:", editedPrice);
+
+    try {
+      const success = await handleSave(editedPrice); // Suponemos que `handleSave` devuelve un booleano o lanza un error
+      if (success) {
+        handleClose();
+      } else {
+        console.error("Error al guardar los cambios");
+      }
+    } catch (error) {
+      console.error("Error en handleSave:", error);
+    }
   };
 
   return (
@@ -23,6 +44,7 @@ const EditPriceModal = ({ open, editedPrice, setEditedPrice, handleSave, handleC
       <DialogTitle>Editar Precio</DialogTitle>
       <DialogContent>
         <Stack spacing={2}>
+          {/* Generar un campo de entrada para cada propiedad del precio */}
           {Object.keys(editedPrice || {}).map((key) => (
             <TextField
               key={key}
@@ -40,10 +62,7 @@ const EditPriceModal = ({ open, editedPrice, setEditedPrice, handleSave, handleC
           Cancelar
         </Button>
         <Button
-          onClick={() => {
-            handleSave(editedPrice);  // Pasar editedPrice a handleSave
-            handleClose();  // Cerrar modal después de guardar
-          }}
+          onClick={handleSaveClick} // Usar la nueva función que maneja el guardado y cierre
           color="primary"
           variant="contained"
         >
